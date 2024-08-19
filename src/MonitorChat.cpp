@@ -72,12 +72,19 @@ void MonitorChat::manejarServidor(int descriptorServidor) {
             close(descriptorServidor);
             break;
         }
-        std::cout << "Respuesta del servidor: " << std::string(buffer, bytesRecibidos) << std::endl;
+
+        {
+            std::lock_guard<std::mutex> lock(mutexServidores);
+            // Get the position of the server in the list
+            auto it = std::find(servidoresConectados.begin(), servidoresConectados.end(), descriptorServidor);
+            int posicion = std::distance(servidoresConectados.begin(), it) + 1;
+
+            std::cout << "Respuesta del servidor " << posicion << ": " << std::string(buffer, bytesRecibidos) << std::endl;
+        }
     }
 }
 
 void MonitorChat::enviarComando(const std::string& comando) {
-    //print the command to the console
     std::cout << "Comando: " << comando << std::endl;
     std::lock_guard<std::mutex> lock(mutexServidores);  // Ensure thread safety
     for (int descriptor : servidoresConectados) {
@@ -91,6 +98,6 @@ void MonitorChat::enviarComando(const std::string& comando) {
 void MonitorChat::leerEntradaConsola() {
     std::string comando;
     while (std::getline(std::cin, comando)) {
-        enviarComando(comando);  // Send the command to all connected servers
+        enviarComando(comando);
     }
 }

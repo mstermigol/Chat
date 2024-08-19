@@ -35,10 +35,10 @@ clean:
 
 # Ejecutar el servidor
 run-servidor: $(TARGET)
-	./$(TARGET) servidor 12348 127.0.0.1 55551
+	./$(TARGET) servidor 12343 127.0.0.1 55551
 # Ejecutar el cliente
 run-cliente: $(TARGET)
-	./$(TARGET) cliente 127.0.0.1 12347
+	./$(TARGET) cliente 127.0.0.1 12341
 # Ejecutar el monitor
 run-monitor: $(TARGET)
 	./$(TARGET) monitor 55551
