@@ -6,12 +6,15 @@
 #include <thread>
 #include <cstring>
 
-// Constructor que inicializa el puerto del servidor
-ServidorChat::ServidorChat(int puerto)
-    : puerto(puerto), descriptorServidor(-1) {}
+// Constructor que inicializa el puerto del servidor y la conexión con el monitor
+ServidorChat::ServidorChat(int puerto, const std::string& ipMonitor, int puertoMonitor)
+    : puerto(puerto), puertoMonitor(puertoMonitor), direccionIPMonitor(ipMonitor), descriptorServidor(-1), descriptorMonitor(-1) {}
 
 // Método para iniciar el servidor
 void ServidorChat::iniciar() {
+    // Conectar con el monitor
+    conectarConMonitor();
+
     // Crear el socket del servidor
     descriptorServidor = socket(AF_INET, SOCK_STREAM, 0);
     if (descriptorServidor == -1) {
@@ -38,6 +41,9 @@ void ServidorChat::iniciar() {
 
     std::cout << "Servidor iniciado en el puerto " << puerto << ". Esperando conexiones...\n";
 
+    // Iniciar el hilo del monitor
+    hiloMonitor = std::thread(&ServidorChat::manejarComandosMonitor, this);
+
     // Aceptar conexiones entrantes
     while (true) {
         sockaddr_in direccionCliente;
@@ -52,6 +58,51 @@ void ServidorChat::iniciar() {
         // Crear un hilo para manejar el cliente
         std::thread hiloCliente(&ServidorChat::manejarCliente, this, descriptorCliente);
         hiloCliente.detach();
+    }
+}
+
+// Conectar con el monitor
+void ServidorChat::conectarConMonitor() {
+    descriptorMonitor = socket(AF_INET, SOCK_STREAM, 0);
+    if (descriptorMonitor == -1) {
+        std::cerr << "Error al crear el socket del monitor.\n";
+        return;
+    }
+
+    sockaddr_in direccionMonitor;
+    direccionMonitor.sin_family = AF_INET;
+    direccionMonitor.sin_port = htons(puertoMonitor);
+    inet_pton(AF_INET, direccionIPMonitor.c_str(), &direccionMonitor.sin_addr);
+
+    if (connect(descriptorMonitor, (sockaddr*)&direccionMonitor, sizeof(direccionMonitor)) == -1) {
+        std::cerr << "Error al conectar con el monitor.\n";
+        return;
+    }
+
+    std::cout << "Conectado al monitor en " << direccionIPMonitor << ":" << puertoMonitor << ".\n";
+}
+
+// Manejar comandos del monitor
+void ServidorChat::manejarComandosMonitor() {
+    char buffer[1024];
+    while (true) {
+        memset(buffer, 0, sizeof(buffer));
+        ssize_t bytesRecibidos = recv(descriptorMonitor, buffer, 1024, 0);
+
+        if (bytesRecibidos <= 0) {
+            std::cerr << "Error o desconexión del monitor.\n";
+            close(descriptorMonitor);
+            return;
+        }
+
+        std::string comando(buffer, bytesRecibidos);
+
+        if (comando == "num-clientes") {
+            std::string respuesta = std::to_string(usuarios.size()) + "\n";
+            send(descriptorMonitor, respuesta.c_str(), respuesta.size(), 0);
+        } else {
+            std::cerr << "Comando desconocido del monitor: " << comando << "\n";
+        }
     }
 }
 
@@ -145,7 +196,6 @@ void ServidorChat::manejarCliente(int descriptorCliente) {
         }
     }
 }
-
 // Enviar un mensaje a todos los usuarios conectados, excepto al remitente
 void ServidorChat::enviarMensajeATodos(const std::string& mensaje, int descriptorRemitente) {
     std::lock_guard<std::mutex> lock(mutexUsuarios);

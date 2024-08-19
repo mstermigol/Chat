@@ -33,6 +33,8 @@ void MonitorChat::iniciar() {
 
     std::cout << "Monitor iniciado en el puerto " << puerto << ". Esperando conexiones...\n";
 
+    hiloConsola = std::thread(&MonitorChat::leerEntradaConsola, this);
+
     while (true) {
         sockaddr_in direccionServidor;
         socklen_t tamanoDireccionServidor = sizeof(direccionServidor);
@@ -74,6 +76,21 @@ void MonitorChat::manejarServidor(int descriptorServidor) {
     }
 }
 
-void MonitorChat::enviarComando(int descriptorServidor, const std::string& comando) {
-    send(descriptorServidor, comando.c_str(), comando.size(), 0);
+void MonitorChat::enviarComando(const std::string& comando) {
+    //print the command to the console
+    std::cout << "Comando: " << comando << std::endl;
+    std::lock_guard<std::mutex> lock(mutexServidores);  // Ensure thread safety
+    for (int descriptor : servidoresConectados) {
+        ssize_t bytesEnviados = send(descriptor, comando.c_str(), comando.size(), 0);
+        if (bytesEnviados == -1) {
+            std::cerr << "Error al enviar comando al servidor " << descriptor << ".\n";
+        }
+    }
+}
+
+void MonitorChat::leerEntradaConsola() {
+    std::string comando;
+    while (std::getline(std::cin, comando)) {
+        enviarComando(comando);  // Send the command to all connected servers
+    }
 }
