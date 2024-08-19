@@ -1,4 +1,5 @@
 #include "ServidorChat.h"
+#include <algorithm>
 #include <iostream>
 #include <unistd.h>
 #include <arpa/inet.h>
@@ -88,15 +89,19 @@ void ServidorChat::manejarCliente(int descriptorCliente) {
             // El cliente se ha desconectado
             {
                 std::lock_guard<std::mutex> lock(mutexUsuarios);
-                for (auto it = usuarios.begin(); it != usuarios.end(); ++it) {
-                    if (it->obtenerDescriptorSocket() == descriptorCliente) {
-                        std::string mensajeDespedida = it->obtenerNombreUsuario() + " se ha desconectado del chat.\n";
-                        enviarMensajeATodos(mensajeDespedida, descriptorCliente);
-                        usuarios.erase(it);
-                        break;
-                    }
-                }
+                usuarios.erase(
+                    std::remove_if(usuarios.begin(), usuarios.end(),
+                                    [descriptorCliente](const Usuario& usuario) {
+                                        return usuario.obtenerDescriptorSocket() == descriptorCliente;
+                                    }),
+                    usuarios.end()
+                );
             }
+
+            std::string mensajeDesconexion = nombreUsuario + " se ha desconectado del chat.\n";
+            enviarMensajeATodos(mensajeDesconexion, descriptorCliente);
+
+            // Cerrar el socket del cliente
             close(descriptorCliente);
             break;
         }
@@ -109,8 +114,24 @@ void ServidorChat::manejarCliente(int descriptorCliente) {
         } else if (mensaje.substr(0, 9) == "@conexion") {
             enviarDetallesConexion(descriptorCliente);
         } else if (mensaje.substr(0, 6) == "@salir") {
+            // Manejar el comando @salir
+            {
+                std::lock_guard<std::mutex> lock(mutexUsuarios);
+                usuarios.erase(
+                    std::remove_if(usuarios.begin(), usuarios.end(),
+                                    [descriptorCliente](const Usuario& usuario) {
+                                        return usuario.obtenerDescriptorSocket() == descriptorCliente;
+                                    }),
+                    usuarios.end()
+                );
+            }
+
+            std::string mensajeDesconexion = nombreUsuario + " se ha desconectado del chat.\n";
+            enviarMensajeATodos(mensajeDesconexion, descriptorCliente);
+
+            // Cerrar el socket del cliente
             close(descriptorCliente);
-            break;
+            return;
         } else if (mensaje.substr(0, 2) == "@h") {
             std::string ayuda = "Comandos disponibles:\n"
                                 "@usuarios - Lista de usuarios conectados\n"
