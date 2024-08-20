@@ -112,7 +112,11 @@ void ServidorChat::manejarComandosMonitor() {
         } else if (comando == "@mensajes") {
             std::string respuesta = std::to_string(totalMensajes) + "\n";
             send(descriptorMonitor, respuesta.c_str(), respuesta.size(), 0);
-        }  else {
+        } else if (comando == "@tasa_mensajes") {
+            std::string respuesta = std::to_string(totalMensajes / usuariosHistorico) + "\n";
+            send(descriptorMonitor, respuesta.c_str(), respuesta.size(), 0);
+        }
+        else {
             std::cerr << "Comando desconocido del monitor: " << comando << "\n";
         }
     }
