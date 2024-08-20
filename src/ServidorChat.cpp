@@ -106,10 +106,10 @@ void ServidorChat::manejarComandosMonitor() {
         if (comando == "@clientes") {
             std::string respuesta = std::to_string(usuarios.size()) + "\n";
             send(descriptorMonitor, respuesta.c_str(), respuesta.size(), 0);
-        } else if (comando == "@clientes_total") {
+        } else if (comando == "@clientes_total" || comando == "@clientes_todo") {
             std::string respuesta = std::to_string(usuariosHistorico) + "\n";
             send(descriptorMonitor, respuesta.c_str(), respuesta.size(), 0);
-        } else if (comando == "@mensajes_total") {
+        } else if (comando == "@mensajes_total" || comando == "@mensajes_todo") {
             std::string respuesta = std::to_string(totalMensajes) + "\n";
             send(descriptorMonitor, respuesta.c_str(), respuesta.size(), 0);
         } else if (comando == "@tasa_mensajes") {
@@ -122,11 +122,7 @@ void ServidorChat::manejarComandosMonitor() {
             if (send(descriptorMonitor, respuesta.c_str(), respuesta.size(), 0) == -1) {
                 perror("send");
             }
-        } else if (comando == "@clientes_todo") {
-            std::string respuesta = std::to_string(usuarios.size()) + "\n";
-            send(descriptorMonitor, respuesta.c_str(), respuesta.size(), 0);
-        }
-        else {
+        } else {
             std::cerr << "Comando desconocido del monitor: " << comando << "\n";
         }
     }

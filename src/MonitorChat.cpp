@@ -100,6 +100,8 @@ void MonitorChat::leerEntradaConsola() {
     while (std::getline(std::cin, comando)) {
         if (comando == "@clientes_todo") {
             recibirYSumarClientes();
+        } else if (comando == "@mensajes_todo") {
+            recibirYsumarMensajes();
         } else {
             enviarComando(comando);
         }
@@ -146,4 +148,45 @@ void MonitorChat::recibirYSumarClientes() {
     
     // Imprime solo el total de clientes de todos los servidores
     std::cout << "Total de clientes de todos los servidores: " << totalClientes << std::endl;
+}
+
+void MonitorChat::recibirYsumarMensajes() {
+    std::lock_guard<std::mutex> lock(mutexServidores);
+
+    int totalMensajes = 0;
+    std::string comando = "@mensajes_todo";  // Comando para solicitar el total de mensajes
+
+    // Enviar el comando a todos los servidores conectados
+    for (int descriptor : servidoresConectados) {
+        ssize_t bytesEnviados = send(descriptor, comando.c_str(), comando.size(), 0);
+        if (bytesEnviados == -1) {
+            std::cerr << "Error al enviar comando al servidor " << descriptor << ".\n";
+            continue;
+        }
+    }
+
+    // Recibir y sumar la respuesta de todos los servidores
+    for (int descriptor : servidoresConectados) {
+        char buffer[1024];
+        memset(buffer, 0, sizeof(buffer));
+        
+        ssize_t bytesRecibidos = recv(descriptor, buffer, sizeof(buffer) - 1, 0);
+        if (bytesRecibidos > 0) {
+            buffer[bytesRecibidos] = '\0';
+            std::string respuesta(buffer, bytesRecibidos);
+
+            try {
+                int mensajes = std::stoi(respuesta);
+                totalMensajes += mensajes;
+            } catch (const std::exception& e) {
+                std::cerr << "Error al procesar la respuesta del servidor " << descriptor << ": " << e.what() << std::endl;
+            }
+        } else if (bytesRecibidos == 0) {
+            std::cerr << "El servidor " << descriptor << " ha cerrado la conexión.\n";
+        } else {
+            std::cerr << "Error al recibir respuesta del servidor " << descriptor << ". Código de error: " << errno << std::endl;
+        }
+    }
+
+    std::cout << "El total de mensajes en todos los servidores es de: " << totalMensajes << std::endl;
 }
