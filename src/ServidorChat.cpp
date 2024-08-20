@@ -106,16 +106,16 @@ void ServidorChat::manejarComandosMonitor() {
         if (comando == "@clientes") {
             std::string respuesta = std::to_string(usuarios.size()) + "\n";
             send(descriptorMonitor, respuesta.c_str(), respuesta.size(), 0);
-        } else if (comando == "@clientes_historico") {
+        } else if (comando == "@clientes_total") {
             std::string respuesta = std::to_string(usuariosHistorico) + "\n";
             send(descriptorMonitor, respuesta.c_str(), respuesta.size(), 0);
-        } else if (comando == "@mensajes") {
+        } else if (comando == "@mensajes_total") {
             std::string respuesta = std::to_string(totalMensajes) + "\n";
             send(descriptorMonitor, respuesta.c_str(), respuesta.size(), 0);
         } else if (comando == "@tasa_mensajes") {
             std::string respuesta = std::to_string(totalMensajes / usuariosHistorico) + "\n";
             send(descriptorMonitor, respuesta.c_str(), respuesta.size(), 0);
-        }
+        } 
         else {
             std::cerr << "Comando desconocido del monitor: " << comando << "\n";
         }
