@@ -113,9 +113,19 @@ void ServidorChat::manejarComandosMonitor() {
             std::string respuesta = std::to_string(totalMensajes) + "\n";
             send(descriptorMonitor, respuesta.c_str(), respuesta.size(), 0);
         } else if (comando == "@tasa_mensajes") {
-            std::string respuesta = std::to_string(totalMensajes / usuariosHistorico) + "\n";
+            std::string respuesta;
+            if (usuariosHistorico == 0) {
+                respuesta = "Error: No hay usuarios para calcular.\n";
+            } else {
+                respuesta = std::to_string(totalMensajes / usuariosHistorico) + "\n";
+            }
+            if (send(descriptorMonitor, respuesta.c_str(), respuesta.size(), 0) == -1) {
+                perror("send");
+            }
+        } else if (comando == "@clientes_todo") {
+            std::string respuesta = std::to_string(usuarios.size()) + "\n";
             send(descriptorMonitor, respuesta.c_str(), respuesta.size(), 0);
-        } 
+        }
         else {
             std::cerr << "Comando desconocido del monitor: " << comando << "\n";
         }

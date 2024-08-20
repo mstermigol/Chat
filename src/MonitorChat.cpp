@@ -98,6 +98,52 @@ void MonitorChat::enviarComando(const std::string& comando) {
 void MonitorChat::leerEntradaConsola() {
     std::string comando;
     while (std::getline(std::cin, comando)) {
-        enviarComando(comando);
+        if (comando == "@clientes_todo") {
+            recibirYSumarClientes();
+        } else {
+            enviarComando(comando);
+        }
     }
+}
+
+void MonitorChat::recibirYSumarClientes() {
+    std::lock_guard<std::mutex> lock(mutexServidores);
+
+    int totalClientes = 0;
+    std::string comando = "@clientes_todo";  
+
+    // Envía el comando a todos los servidores conectados
+    for (int descriptor : servidoresConectados) {
+        ssize_t bytesEnviados = send(descriptor, comando.c_str(), comando.size(), 0);
+        if (bytesEnviados == -1) {
+            std::cerr << "Error al enviar comando al servidor " << descriptor << ".\n";
+            continue; 
+        }
+    }
+
+    // Recibe la respuesta de cada servidor y suma el total de clientes
+    for (int descriptor : servidoresConectados) {
+        char buffer[1024];
+        memset(buffer, 0, sizeof(buffer));
+        
+        ssize_t bytesRecibidos = recv(descriptor, buffer, sizeof(buffer) - 1, 0); 
+        if (bytesRecibidos > 0) {
+            buffer[bytesRecibidos] = '\0'; 
+            std::string respuesta(buffer);
+            
+            try {
+                int clientes = std::stoi(respuesta);
+                totalClientes += clientes;
+            } catch (const std::exception& e) {
+                std::cerr << "Error al procesar la respuesta del servidor " << descriptor << ": " << e.what() << std::endl;
+            }
+        } else if (bytesRecibidos == 0) {
+            std::cerr << "El servidor " << descriptor << " ha cerrado la conexión.\n";
+        } else {
+            std::cerr << "Error al recibir respuesta del servidor " << descriptor << ". Código de error: " << errno << std::endl;
+        }
+    }
+    
+    // Imprime solo el total de clientes de todos los servidores
+    std::cout << "Total de clientes de todos los servidores: " << totalClientes << std::endl;
 }

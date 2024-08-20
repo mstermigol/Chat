@@ -14,7 +14,8 @@ public:
 
 private:
     void manejarServidor(int descriptorServidor);
-    void leerEntradaConsola(); 
+    void leerEntradaConsola();
+    void recibirYSumarClientes();
 
     int puerto;
     int descriptorMonitor;
