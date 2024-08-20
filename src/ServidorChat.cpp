@@ -24,7 +24,7 @@ void ServidorChat::iniciar() {
     // Crear el socket del servidor
     descriptorServidor = socket(AF_INET, SOCK_STREAM, 0);
     if (descriptorServidor == -1) {
-        std::cerr << "Error al crear el socket del servidor.\n";
+        std::cerr << "Error al crear el socket de la clase.\n";
         return;
     }
 
@@ -35,17 +35,17 @@ void ServidorChat::iniciar() {
 
     // Asociar el socket a la dirección y puerto
     if (bind(descriptorServidor, (sockaddr*)&direccionServidor, sizeof(direccionServidor)) == -1) {
-        std::cerr << "Error al hacer bind del socket del servidor.\n";
+        std::cerr << "Error al hacer bind del socket de la clase.\n";
         return;
     }
 
     // Poner el servidor en modo escucha
     if (listen(descriptorServidor, 10) == -1) {
-        std::cerr << "Error al poner el servidor en modo escucha.\n";
+        std::cerr << "Error al poner la clase en modo escucha.\n";
         return;
     }
 
-    std::cout << "Servidor iniciado en el puerto " << puerto << ". Esperando conexiones...\n";
+    std::cout << "Clase iniciado en el puerto " << puerto << ". Esperando conexiones...\n";
 
     // Iniciar el hilo del monitor
     hiloMonitor = std::thread(&ServidorChat::manejarComandosMonitor, this);
@@ -57,7 +57,7 @@ void ServidorChat::iniciar() {
         int descriptorCliente = accept(descriptorServidor, (sockaddr*)&direccionCliente, &tamanoDireccionCliente);
 
         if (descriptorCliente == -1) {
-            std::cerr << "Error al aceptar la conexión de un cliente.\n";
+            std::cerr << "Error al aceptar la conexión de un estudiante.\n";
             continue;
         }
 
@@ -103,6 +103,7 @@ void ServidorChat::manejarComandosMonitor() {
 
         std::string comando(buffer, bytesRecibidos);
 
+        // Procesar comandos específicos del monitor
         if (comando == "@clientes") {
             std::string respuesta = std::to_string(usuarios.size()) + "\n";
             send(descriptorMonitor, respuesta.c_str(), respuesta.size(), 0);
@@ -219,6 +220,7 @@ void ServidorChat::manejarCliente(int descriptorCliente) {
         }
     }
 }
+
 // Enviar un mensaje a todos los usuarios conectados, excepto al remitente
 void ServidorChat::enviarMensajeATodos(const std::string& mensaje, int descriptorRemitente) {
     std::lock_guard<std::mutex> lock(mutexUsuarios);
@@ -233,7 +235,7 @@ void ServidorChat::enviarMensajeATodos(const std::string& mensaje, int descripto
 // Enviar la lista de usuarios conectados al cliente especificado
 void ServidorChat::enviarListaUsuarios(int descriptorCliente) {
     std::lock_guard<std::mutex> lock(mutexUsuarios);
-    std::string listaUsuarios = "Usuarios conectados:\n";
+    std::string listaUsuarios = "Estudiantes conectados:\n";
     for (const auto& usuario : usuarios) {
         listaUsuarios += usuario.obtenerNombreUsuario() + "\n";
     }
@@ -243,6 +245,6 @@ void ServidorChat::enviarListaUsuarios(int descriptorCliente) {
 // Enviar los detalles de la conexión y el número de usuarios conectados
 void ServidorChat::enviarDetallesConexion(int descriptorCliente) {
     std::lock_guard<std::mutex> lock(mutexUsuarios);
-    std::string detalles = "Número de usuarios conectados: " + std::to_string(usuarios.size()) + "\n";
+    std::string detalles = "Número de estudiantes conectados: " + std::to_string(usuarios.size()) + "\n";
     send(descriptorCliente, detalles.c_str(), detalles.size(), 0);
 }
