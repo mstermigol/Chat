@@ -8,7 +8,13 @@
 
 // Constructor que inicializa el puerto del servidor y la conexión con el monitor
 ServidorChat::ServidorChat(int puerto, const std::string& ipMonitor, int puertoMonitor)
-    : puerto(puerto), puertoMonitor(puertoMonitor), direccionIPMonitor(ipMonitor), descriptorServidor(-1), descriptorMonitor(-1), usuariosHistorico(0){}
+    : puerto(puerto), 
+      descriptorServidor(-1), 
+      descriptorMonitor(-1), 
+      direccionIPMonitor(ipMonitor), 
+      puertoMonitor(puertoMonitor), 
+      usuariosHistorico(0), 
+      totalMensajes(0) {}
 
 // Método para iniciar el servidor
 void ServidorChat::iniciar() {
@@ -97,13 +103,16 @@ void ServidorChat::manejarComandosMonitor() {
 
         std::string comando(buffer, bytesRecibidos);
 
-        if (comando == "num-clientes") {
+        if (comando == "@clientes") {
             std::string respuesta = std::to_string(usuarios.size()) + "\n";
             send(descriptorMonitor, respuesta.c_str(), respuesta.size(), 0);
-        } else if (comando == "num-clientes-historico") {
+        } else if (comando == "@clientes_historico") {
             std::string respuesta = std::to_string(usuariosHistorico) + "\n";
             send(descriptorMonitor, respuesta.c_str(), respuesta.size(), 0);
-        } else {
+        } else if (comando == "@mensajes") {
+            std::string respuesta = std::to_string(totalMensajes) + "\n";
+            send(descriptorMonitor, respuesta.c_str(), respuesta.size(), 0);
+        }  else {
             std::cerr << "Comando desconocido del monitor: " << comando << "\n";
         }
     }
@@ -203,6 +212,7 @@ void ServidorChat::manejarCliente(int descriptorCliente) {
 // Enviar un mensaje a todos los usuarios conectados, excepto al remitente
 void ServidorChat::enviarMensajeATodos(const std::string& mensaje, int descriptorRemitente) {
     std::lock_guard<std::mutex> lock(mutexUsuarios);
+    totalMensajes++;
     for (const auto& usuario : usuarios) {
         if (usuario.obtenerDescriptorSocket() != descriptorRemitente) {
             send(usuario.obtenerDescriptorSocket(), mensaje.c_str(), mensaje.size(), 0);

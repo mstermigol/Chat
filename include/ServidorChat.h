@@ -29,6 +29,7 @@ private:
     std::mutex mutexUsuarios;  // Mutex para proteger el acceso a la lista de usuarios
     std::thread hiloMonitor;  // Hilo para manejar la comunicación con el monitor
     int usuariosHistorico;  // Total de usuarios que han estado conectados
+    int totalMensajes; // Total de mensajes enviados
 };
 
 #endif // SERVIDORCHAT_H
