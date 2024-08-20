@@ -8,7 +8,7 @@
 
 // Constructor que inicializa el puerto del servidor y la conexión con el monitor
 ServidorChat::ServidorChat(int puerto, const std::string& ipMonitor, int puertoMonitor)
-    : puerto(puerto), puertoMonitor(puertoMonitor), direccionIPMonitor(ipMonitor), descriptorServidor(-1), descriptorMonitor(-1) {}
+    : puerto(puerto), puertoMonitor(puertoMonitor), direccionIPMonitor(ipMonitor), descriptorServidor(-1), descriptorMonitor(-1), usuariosHistorico(0){}
 
 // Método para iniciar el servidor
 void ServidorChat::iniciar() {
@@ -100,6 +100,9 @@ void ServidorChat::manejarComandosMonitor() {
         if (comando == "num-clientes") {
             std::string respuesta = std::to_string(usuarios.size()) + "\n";
             send(descriptorMonitor, respuesta.c_str(), respuesta.size(), 0);
+        } else if (comando == "num-clientes-historico") {
+            std::string respuesta = std::to_string(usuariosHistorico) + "\n";
+            send(descriptorMonitor, respuesta.c_str(), respuesta.size(), 0);
         } else {
             std::cerr << "Comando desconocido del monitor: " << comando << "\n";
         }
@@ -125,6 +128,7 @@ void ServidorChat::manejarCliente(int descriptorCliente) {
     {
         std::lock_guard<std::mutex> lock(mutexUsuarios);
         usuarios.emplace_back(nombreUsuario, descriptorCliente);
+        usuariosHistorico++;  // Incrementar el contador de usuarios históricos
     }
 
     // Notificar a todos los usuarios que un nuevo usuario se ha conectado

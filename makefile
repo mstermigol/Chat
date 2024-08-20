@@ -38,7 +38,7 @@ run-servidor: $(TARGET)
 	./$(TARGET) servidor 12343 127.0.0.1 55551
 # Ejecutar el cliente
 run-cliente: $(TARGET)
-	./$(TARGET) cliente 127.0.0.1 12341
+	./$(TARGET) cliente 127.0.0.1 12343
 # Ejecutar el monitor
 run-monitor: $(TARGET)
 	./$(TARGET) monitor 55551
